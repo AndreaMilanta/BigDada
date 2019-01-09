@@ -1,0 +1,10 @@
+# git
+.git/
+
+# Cloud 9
+*.c9
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
