@@ -1,2 +1,2 @@
 # BigDada
-Repository for project
+Code for analysis of Bank Marketing UCI repository
