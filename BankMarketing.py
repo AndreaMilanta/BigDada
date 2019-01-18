@@ -6,6 +6,8 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 from io import BytesIO
 import seaborn as sns
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 
@@ -89,5 +91,6 @@ fig.set_size_inches(18,15)
 plt.xticks(fontsize=14)
 plt.yticks(fontsize=14)
 plt.show()
+fig.savefig('correlation matrix.svg')
 
-print(df["loan"].value_counts()/len(df))
+# print(df["loan"].value_counts()/len(df))
