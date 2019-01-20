@@ -9,14 +9,31 @@ import seaborn as sns
 import matplotlib
 # matplotlib.use('Agg')
 from matplotlib import pyplot as plt
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import cross_val_score
+
+# classifiers
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import tree
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.gaussian_process.kernels import RBF
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+
+
 
 
 #                                                       #
 #------------ CONSTANTS --------------------------------#
 #-------------------------------------------------------#
 BankMarketingURL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank.zip"
-BankMarketingName = "bank-full.csv"
-
+# BankMarketingName = "bank-full.csv"
+BankMarketingName = "bank.csv"
 
 #                                                       #
 #------------ DATASET IMPORT ---------------------------#
@@ -26,7 +43,6 @@ BankMarketingName = "bank-full.csv"
 bmzip = urlopen(BankMarketingURL)
 bmcsv = ZipFile(BytesIO(bmzip.read())).extract(BankMarketingName)
 df = pd.read_csv(bmcsv, sep=';');
-
 
 #
 #----------- ENUM to INTEGER ---------------------------#
@@ -73,14 +89,17 @@ df["housing"] = df["housing"].apply(lambda x: 0 if x == 'no' else 1).astype(np.i
 df["subscribed"] = df["y"].apply(lambda x: 0 if x == 'no' else 1).astype(np.int64)
 df["loan"] = df["loan"].apply(lambda x: 0 if x == 'no' else 1).astype(np.int64)
 df["default"] = df["default"].apply(lambda x: 0 if x == 'no' else 1).astype(np.int64)
-df["subscribed"] = df["y"].apply(lambda x: 0 if x == 'no' else 1).astype(np.int64)
 
 # discretization
 df["age"] = df["age"].apply(age2group)
 df["balance"] = df["balance"].apply(balance2group)
 
+# convert target class to binary values and drop original
+df["subscribed"] = df["y"].apply(lambda x: 0 if x == 'no' else 1).astype(np.int64)
+df.drop("y", axis=1, inplace=True);
+
 #                                                       #
-#------------ FEATURE AANALYSIS ------------------------#
+#------------ FEATURE ANALYSIS -------------------------#
 #-------------------------------------------------------#
 #
 # correlation matrix
@@ -93,4 +112,46 @@ plt.yticks(fontsize=14)
 plt.show()
 # fig.savefig('correlation matrix.svg')     Save correlation matrix figure
 
-# print(df["loan"].value_counts()/len(df))
+# housing loan - subscription correlation
+crs_housing = pd.crosstab(df['subscribed'], df['housing']).apply(lambda x: x/x.sum() * 100)
+
+
+#                                                       #
+#------------ TRAIN TEST SPLIT -------------------------#
+#-------------------------------------------------------#
+#
+# get train and test dataset stratified
+stratifyfeature = "subscribed"      # feature used for stratification
+splitters = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=425)
+for train_set, test_set in splitters.split(df, df[stratifyfeature]):
+    train = df.loc[train_set]
+    test = df.loc[test_set]
+
+y_train = train["subscribed"]
+y_test = test["subscribed"]
+
+x_train = train.drop("subscribed", axis=1).apply(LabelEncoder().fit_transform)
+x_test = test.drop("subscribed", axis=1).apply(LabelEncoder().fit_transform)
+
+# print(y_train.ftypes)
+
+#                                                       #
+#------------ CLASSIFICATION ---------------------------#
+#-------------------------------------------------------#
+#
+# logistic regression - STANDARD
+LRclassifier = LogisticRegression()
+LRclassifier.fit(x_train,y_train)
+LRtrain_score = LRclassifier.score(x_train, y_train)
+LRtest_score = LRclassifier.score(x_test, y_test)
+
+# Logistic Regression - CROSS VALIDATION
+LRscores = cross_val_score(LRclassifier, x_train, y_train, cv=3)
+LRmean = LRscores.mean()
+
+print("train score: " + str(LRtrain_score))
+print("test score: " + str(LRtest_score))
+print("crossvalidation score: " + str(LRmean))
+
+# dataset balance yes-no
+# print(df['subscribed'].value_counts())
